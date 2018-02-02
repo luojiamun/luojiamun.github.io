@@ -5,17 +5,17 @@
     
     <title>Working with Apache Spark-Or, How I Learned to Stop Worrying and Love the Shuffle | Jia</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <meta name="description" content="Working with Apache Spark: Or, How I Learned to Stop Worrying and Love the Shuffle (不完全翻译)原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括pa">
+    <meta name="description" content="原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括partitioning区块, caching缓存, serialization序列化和the shuffle operation洗牌操作。 Partitions-区块Spark的基本">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Working with Apache Spark-Or, How I Learned to Stop Worrying and Love the Shuffle">
 <meta property="og:url" content="http://yoursite.com/2018/01/31/First-blog-from-hexo/index.html">
 <meta property="og:site_name" content="Jia">
-<meta property="og:description" content="Working with Apache Spark: Or, How I Learned to Stop Worrying and Love the Shuffle (不完全翻译)原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括pa">
+<meta property="og:description" content="原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括partitioning区块, caching缓存, serialization序列化和the shuffle operation洗牌操作。 Partitions-区块Spark的基本">
 <meta property="og:locale" content="en">
-<meta property="og:updated_time" content="2018-02-01T21:57:42.144Z">
+<meta property="og:updated_time" content="2018-02-02T16:11:58.243Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Working with Apache Spark-Or, How I Learned to Stop Worrying and Love the Shuffle">
-<meta name="twitter:description" content="Working with Apache Spark: Or, How I Learned to Stop Worrying and Love the Shuffle (不完全翻译)原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括pa">
+<meta name="twitter:description" content="原作者：By Justin Kestelyn (@kestelyn) 原文链接 1第一部分是作者简介和接触到Spark的背景，此段略去。 知识整理首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括partitioning区块, caching缓存, serialization序列化和the shuffle operation洗牌操作。 Partitions-区块Spark的基本">
     
 
     
@@ -205,7 +205,7 @@
         <div class="article-entry" itemprop="articleBody">
         
             
-            <h1 id="Working-with-Apache-Spark-Or-How-I-Learned-to-Stop-Worrying-and-Love-the-Shuffle-不完全翻译"><a href="#Working-with-Apache-Spark-Or-How-I-Learned-to-Stop-Worrying-and-Love-the-Shuffle-不完全翻译" class="headerlink" title="Working with Apache Spark: Or, How I Learned to Stop Worrying and Love the Shuffle (不完全翻译)"></a>Working with Apache Spark: Or, How I Learned to Stop Worrying and Love the Shuffle (不完全翻译)</h1><p>原作者：By Justin Kestelyn (@kestelyn)</p>
+            <p>原作者：By Justin Kestelyn (@kestelyn)</p>
 <p><a href="http://blog.cloudera.com/blog/2015/05/working-with-apache-spark-or-how-i-learned-to-stop-worrying-and-love-the-shuffle/" target="_blank" rel="noopener">原文链接</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">第一部分是作者简介和接触到Spark的背景，此段略去。</span><br></pre></td></tr></table></figure>
 <h1 id="知识整理"><a href="#知识整理" class="headerlink" title="知识整理"></a>知识整理</h1><p>首先回顾一下Spark中的关键知识点，不求全，只说那些最为基本的。包括partitioning区块, caching缓存, serialization序列化和the shuffle operation洗牌操作。</p>
@@ -220,7 +220,15 @@
 <p>那又该如何避免移动数据呢？最明确的答案就是避免导致洗牌的操作，比如repartition, coalesce, ByKey, groupByKey, reduceByKey, cogroup以及join。</p>
 <p>Spark还额外提供了两个机制帮助做到这一点。首先是Broadcast variables-广播变量，这是个只读变量，缓存在每台机器的本地内存，从而无需在每次做任务时重新拷贝了。使用广播变量还能让你在大的和小的RDD之间进行有效的joins操作，还能将查询表放入内存，这样就比RDD的lookup方法更快的能查询到数据。</p>
 <p>Accumulatorsl累加器则可以在执行过程中并行更新变量。它与广播变量不一样的地方在于，其虽然只能在driver过程中被读取，却能允许Spark程序合计counters,sums,generated lists这些结果。关于累加器需要注意的是，它不仅局限于基础类型，也可以累加Accumulable类。</p>
-<h2 id="教训3-避免数据移动太难了"><a href="#教训3-避免数据移动太难了" class="headerlink" title="教训3: 避免数据移动太难了"></a>教训3: 避免数据移动太难了</h2>
+<h2 id="教训3-避免数据移动太难了"><a href="#教训3-避免数据移动太难了" class="headerlink" title="教训3: 避免数据移动太难了"></a>教训3: 避免数据移动太难了</h2><p>使用上文的机制其实比较难，比如说，要想广播一个RDD变量，首先得在driver节点collect()。而想要累积分布式计算的执行结果，则需要将数据序列化回到driver并在那里累积。这么做的结果就是driver上的内存压力变大了。collect RDD，持久化元数据，累加器，这些会让你driver的内存迅速耗光。当然你也可以增加driver的内存，不过这么做也是有个度的。</p>
+<p>上面我提到了几件事：更少的分区会增加每个分区的数据量，以及Spark如何用Akka传递消息的。如果你有2GB的RDD,但只分成了20个分区,那么每当需要将数据从一个分区序列化到另一个节点时,你要通过Akka传输100MB的数据包.但默认情况下,Akka的缓存只有10MB!当然你也可以设置<code>akka.frameSize</code>,但这么做的前提是你完全了解自己的数据,以及这些数据移动是怎么进行的.</p>
+<h2 id="教训4-速度"><a href="#教训4-速度" class="headerlink" title="教训4: 速度!"></a>教训4: 速度!</h2><p>前三个教训主要针对的稳定性.接下来我说一下我是怎么显著提升速度的.</p>
+<p>第一个毋庸置疑是熟练运用缓存.当然,内存是有限的,不能瞎缓存.不过一般来所,要用到两次的数据都该缓存.另外,不用了的RDD一般会自动反持久化,当然你可以手动<code>unpersist()</code>.</p>
+<p>第二,我发现广播变量特别有用.我常用它们做大的映射操作和查询表格.它们比缓存了的RDD要有优势得多,因为RDD即便缓存了,查询速度也要O(m),m是在单独一个分区中数据的长度.而广播了的hash map则只需要O(1).</p>
+<p>最后,有时候我还得调整Spark的并行执行过程.我的情况是,要做一些key-value的跨RDD查询,在第一个RDD查询值,然后在第二个RDD进行一些操作.简单地实现方式是让Spark一次处理一个key,这样的结果显然是资源利用率极低,每次只有几个工作在进行,大部分的executors根本没用到.原因是没有使用RDD的API来运行,从而无法利用到Spark的并行机制.最终的做法也很简单,在driver上建立一个线程池,一次处理多个key.每个线程都可以生成一些任务提交给YARN,这样之后我可以充分燃烧我的CPU了.</p>
+<p>最后的这个教训告诉我们,想用Spark,得会用.</p>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>我希望上述的简单概念梳理和教训总结(以及相应文档)能少许改善一点Spark的复杂度.每当我学到了一些的时候,都会记录下来那些内容,作为引用(译者),帮助我进一步理解Spark机制,配置,调试等高级功能.希望上述这些内容对你也有帮助.</p>
+
         
         </div>
         <footer class="article-footer">
@@ -230,7 +238,7 @@
 
 </div>
 
-    <a data-url="http://yoursite.com/2018/01/31/First-blog-from-hexo/" data-id="cjd51kq4g0000za9nky564wag" class="article-share-link"><i class="fa fa-share"></i>Share</a>
+    <a data-url="http://yoursite.com/2018/01/31/First-blog-from-hexo/" data-id="cjd64ogze0000tg9nalfdc09l" class="article-share-link"><i class="fa fa-share"></i>Share</a>
 <script>
     (function ($) {
         // Prevent duplicate binding
